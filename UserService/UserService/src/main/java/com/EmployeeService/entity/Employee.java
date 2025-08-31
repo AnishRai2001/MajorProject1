@@ -69,16 +69,28 @@ public class Employee {
 		this.role = role;
 	}
 
+	public boolean isVerified() {
+		return verified;
+	}
+
+	public void setVerified(boolean verified) {
+		this.verified = verified;
+	}
+
 	public boolean isEnabled() {
 		return enabled;
 	}
 
+	public void setEnabled(boolean enabled) {
+		this.enabled = enabled;
+	}
 
 
-	public boolean isVerified() { return verified; }
-	public void setVerified(boolean verified) { this.verified = verified; }
 
-	
-	
 
+		
 }
+	
+	
+
+

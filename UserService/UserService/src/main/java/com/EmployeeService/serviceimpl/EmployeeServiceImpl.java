@@ -19,6 +19,8 @@ import com.EmployeeService.exception.NameAlreadyExistsException;
 import com.EmployeeService.service.EmployeeService;
 import com.UserService.dto.EmployeeDto;
 
+import jakarta.transaction.Transactional;
+
 @Service
 public class EmployeeServiceImpl implements EmployeeService {
 
@@ -70,6 +72,7 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     // ========================= VERIFY EMAIL =========================
     @Override
+    @Transactional
     public boolean verifyEmail(String tokenStr) {
         VerificationToken token = tokenRepo.findByToken(tokenStr)
                 .orElseThrow(() -> new RuntimeException("Invalid token"));
@@ -78,7 +81,7 @@ public class EmployeeServiceImpl implements EmployeeService {
             throw new RuntimeException("Token expired");
 
         Employee employee = token.getEmployee();
-        employee.setVerified(true);  // make sure Employee has 'verified' field
+        employee.setEnabled(true);  // make sure Employee has 'verified' field
         employeeRepository.save(employee);
 
         tokenRepo.deleteByEmployee(employee);

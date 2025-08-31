@@ -22,14 +22,17 @@ public class CustomUserDetailsService implements UserDetailsService{
 	private EmployeeRepository employeeRepository;
 	@Override
 	public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-	
-		Optional<Employee>user=employeeRepository.findByEmail(email);
-		if(user.isPresent()) {
-			   return new User(email, user.get().getPassword(), Collections.singleton(new SimpleGrantedAuthority("ROLE" +user.get().getRole())));
-		}
-		   else {
-	            throw new UsernameNotFoundException("User not found with email: " + email);
-	}
+	    Employee employee = employeeRepository.findByEmail(email)
+	            .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
 
+	    if (!employee.isEnabled()) {
+	        throw new RuntimeException("Email not verified");
+	    }
+
+	    return new User(
+	        employee.getEmail(),
+	        employee.getPassword(),
+	        Collections.singleton(new SimpleGrantedAuthority("ROLE_" + employee.getRole()))
+	    );
 	}
 }

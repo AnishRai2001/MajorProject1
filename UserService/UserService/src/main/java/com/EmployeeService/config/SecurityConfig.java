@@ -19,9 +19,10 @@ public class SecurityConfig {
 
     @Autowired
     private CustomUserDetailsService customUserDetailsService;
-@Autowired
-private JwtFilter jwtFilter;
-    
+
+    @Autowired
+    private JwtFilter jwtFilter;
+
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
@@ -42,22 +43,29 @@ private JwtFilter jwtFilter;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-         http.csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(auth -> auth
-                        // Public endpoints
-                        .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
+        http.csrf(csrf -> csrf.disable())
+            .authorizeHttpRequests(auth -> auth
+                // Public endpoints (no JWT required)
+            		  .requestMatchers(
+            			        "/api/auth/register",
+            			        "/api/auth/login",
+            			        "/api/auth/verify",
+            			        "/api/auth/forgot-password",
+            			        "/api/auth/reset-password"
+            			    ).permitAll()
 
-                        // Role-based endpoints
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/manager/**").hasAnyRole("ADMIN", "MANAGER")
-                        .requestMatchers("/api/user/**").hasAnyRole("USER", "ADMIN", "MANAGER")
+                // Role-based endpoints
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .requestMatchers("/api/manager/**").hasAnyRole("ADMIN", "MANAGER")
+                .requestMatchers("/api/user/**").hasAnyRole("USER", "ADMIN", "MANAGER")
 
-                        // Any other request must be authenticated
-                        .anyRequest().authenticated()
-                )
-                .authenticationProvider(authProvider()) // ensure DaoAuthProvider is used
-                .addFilterBefore(jwtFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);
+                // Any other request must be authenticated
+                .anyRequest().authenticated()
+            )
+            .authenticationProvider(authProvider())
+            .addFilterBefore(jwtFilter,
+                    org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);
 
-                return http.build();
+        return http.build();
     }
 }
