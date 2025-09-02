@@ -1,156 +1,142 @@
 package com.InventoryService.serviceImpl;
 
-import java.time.Year;
+import com.InventoryService.Repository.VehicleRepository;
+import com.InventoryService.client.MediaClient;
+import com.InventoryService.dto.MediaUploadResponse;
+import com.InventoryService.dto.VehicleDetailsDto;
+import com.InventoryService.entity.*;
+import com.InventoryService.service.VehicleService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
-import com.InventoryService.Repository.VehicleRepository;
-import com.InventoryService.dto.VehicleDetailsDto;
-import com.InventoryService.entity.Brand;
-import com.InventoryService.entity.Mileage;
-import com.InventoryService.entity.Moddel;
-import com.InventoryService.entity.Price;
-import com.InventoryService.entity.VehicleDetails;
-import com.InventoryService.service.VehicleService;
-import com.fasterxml.jackson.datatype.jdk8.OptionalDoubleSerializer;
-
 @Service
 public class VehicleServiceImpl implements VehicleService {
 
-	@Autowired
-	private VehicleRepository vehicleRepository;
+    @Autowired
+    private VehicleRepository vehicleRepository;
 
-	@Override
-	public VehicleDetailsDto createVehicle(VehicleDetailsDto vehicledto) {
+    @Autowired
+    private MediaClient mediaClient;
 
-	    VehicleDetails details = new VehicleDetails();
+    @Override
+    public VehicleDetailsDto createVehicle(VehicleDetailsDto dto, List<MultipartFile> files) {
+        // Step 1: Convert DTO -> Entity
+        VehicleDetails vehicle = new VehicleDetails();
 
-	    // Brand
-	    Brand brand = new Brand();
-	    brand.setBrand(vehicledto.getBrand());
-	    details.setBrand(brand);
+        Brand brand = new Brand();//You are creating a new instance of the Brand entity
+        brand.setBrand(dto.getBrand());//save brand from dto to entity
+        vehicle.setBrand(brand);
 
-	    // Model
-	    Moddel model = new Moddel();
-	    model.setModel(vehicledto.getModel());
-	    details.setModel(model);
+        Moddel model = new Moddel();
+        model.setModel(dto.getModel());
+        vehicle.setModel(model);
 
-	    // Price
-	    Price price = new Price();
-	    price.setPrice(vehicledto.getPrice());
-	    details.setPrice(price);
+        Price price = new Price();
+        price.setPrice(dto.getPrice());
+        vehicle.setPrice(price);
 
-	    // Mileage
-	    Mileage mileage = new Mileage();
-	    mileage.setMileage(vehicledto.getMileage());
-	    details.setMileage(mileage);
+        Mileage mileage = new Mileage();
+        mileage.setMileage(dto.getMileage());
+        vehicle.setMileage(mileage);
 
-	    // Year
-	    com.InventoryService.entity.Year years = new com.InventoryService.entity.Year();
-	    years.setYear(vehicledto.getYear());
-	    details.setYear(years);
+        Year year = new Year();
+        year.setYear(dto.getYear());
+        vehicle.setYear(year);
 
-	    // Save entity
-	    VehicleDetails saved = vehicleRepository.save(details);
+        Transmission_Type transmissionType = new Transmission_Type();
+        transmissionType.setTransmission_type(dto.getTransmissionType());
+        vehicle.setTransmission_Type(transmissionType);
 
-	    // Convert back to DTO
-	    VehicleDetailsDto response = new VehicleDetailsDto();
-	    response.setId(saved.getId());
-	    response.setBrand(saved.getBrand().getBrand());
-	    response.setModel(saved.getModel().getModel());
-	    response.setPrice(saved.getPrice().getPrice());
-	    response.setMileage(saved.getMileage().getMileage());
-	    response.setYear(saved.getYear().getYear());
+        // ✅ Save vehicle first (to get ID)
+        VehicleDetails savedVehicle = vehicleRepository.save(vehicle);
 
-	    return response;
-	}
+        // Step 2: Upload media (if any)
+        List<VehicleMedia> mediaList = new ArrayList<>();
+        if (files != null) {
+            for (MultipartFile file : files) {
+                MediaUploadResponse response = mediaClient.uploadMedia(savedVehicle.getId(), file);
 
-	@Override
-	public Optional<VehicleDetailsDto> findVehicleById(Long id) {
-	    Optional<VehicleDetails> vehicleOpt = vehicleRepository.findById(id);
+                VehicleMedia media = new VehicleMedia();
+                media.setS3Url(response.getS3Url());
+                media.setVehicleDetails(savedVehicle);
+                savedVehicle.getMediaList().add(media);
+            }
+        }
 
-	    if (vehicleOpt.isEmpty()) {
-	        return Optional.empty();
-	    }
+        savedVehicle = vehicleRepository.save(savedVehicle);
 
-	    VehicleDetails vehicle = vehicleOpt.get();
-	    VehicleDetailsDto dto = new VehicleDetailsDto();
-	    dto.setId(vehicle.getId());
-	    dto.setBrand(vehicle.getBrand().getBrand());
-	    dto.setModel(vehicle.getModel().getModel());
-	    dto.setPrice(vehicle.getPrice().getPrice());
-	    dto.setMileage(vehicle.getMileage().getMileage());
-	    dto.setYear(vehicle.getYear().getYear());
+        // Step 3: Convert back to DTO
+        return convertToDto(savedVehicle);
+    }
 
-	    return Optional.of(dto);
-	}
+    @Override
+    public Optional<VehicleDetailsDto> findVehicleById(Long id) {
+        Optional<VehicleDetails> optional = vehicleRepository.findById(id);
+        if (optional.isPresent()) {
+            return Optional.of(convertToDto(optional.get()));
+        }
+        return Optional.empty();
+    }
 
-	@Override
-	public List<VehicleDetailsDto> getAllVehicles() {
-	    List<VehicleDetails> vehicles = vehicleRepository.findAll();
-	    List<VehicleDetailsDto> dtos = new ArrayList<>();
+    @Override
+    public List<VehicleDetailsDto> getAllVehicles() {
+        List<VehicleDetails> vehicles = vehicleRepository.findAll();
+        List<VehicleDetailsDto> dtoList = new ArrayList<>();
+        for (VehicleDetails v : vehicles) {
+            dtoList.add(convertToDto(v));
+        }
+        return dtoList;
+    }
 
-	    for (VehicleDetails vehicle : vehicles) {
-	        VehicleDetailsDto dto = new VehicleDetailsDto();
-	        dto.setId(vehicle.getId());
-	        dto.setBrand(vehicle.getBrand().getBrand());
-	        dto.setModel(vehicle.getModel().getModel());
-	        dto.setPrice(vehicle.getPrice().getPrice());
-	        dto.setMileage(vehicle.getMileage().getMileage());
-	        dto.setYear(vehicle.getYear().getYear());
-	        dtos.add(dto);
-	    }
+    @Override
+    public VehicleDetailsDto updateVehicle(Long id, VehicleDetailsDto dto) {
+        VehicleDetails vehicle = vehicleRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Vehicle not found with id " + id));
 
-	    return dtos;
-	}
+        if (dto.getBrand() != null) vehicle.getBrand().setBrand(dto.getBrand());
+        if (dto.getModel() != null) vehicle.getModel().setModel(dto.getModel());
+        if (dto.getPrice() != null) vehicle.getPrice().setPrice(dto.getPrice());
+        if (dto.getMileage() != null) vehicle.getMileage().setMileage(dto.getMileage());
+        if (dto.getYear() != null) vehicle.getYear().setYear(dto.getYear());
+        if (dto.getTransmissionType() != null) vehicle.getTransmission_Type().setTransmission_type(dto.getTransmissionType());
 
-	@Override
-	public VehicleDetails updateVehicle(Long id, VehicleDetailsDto dto) {
-	    VehicleDetails vehicle = vehicleRepository.findById(id)
-	            .orElseThrow(() -> new RuntimeException("Vehicle not found with id " + id));
+        VehicleDetails updated = vehicleRepository.save(vehicle);
 
-	    // Update Brand
-	    if (vehicle.getBrand() != null) {
-	        vehicle.getBrand().setBrand(dto.getBrand());
-	    }
+        return convertToDto(updated);
+    }
 
-	    // Update Model
-	    if (vehicle.getModel() != null) {
-	        vehicle.getModel().setModel(dto.getModel());
-	    }
+    @Override
+    public void deleteVehicle(Long id) {
+        if (!vehicleRepository.existsById(id)) {
+            throw new RuntimeException("Vehicle not found with id " + id);
+        }
+        vehicleRepository.deleteById(id);
+    }
 
-	    // Update Price
-	    if (vehicle.getPrice() != null) {
-	        vehicle.getPrice().setPrice(dto.getPrice());
-	    }
+    // ✅ Utility method
+    private VehicleDetailsDto convertToDto(VehicleDetails vehicle) {
+        VehicleDetailsDto dto = new VehicleDetailsDto();
+        dto.setId(vehicle.getId());
+        dto.setBrand(vehicle.getBrand().getBrand());
+        dto.setModel(vehicle.getModel().getModel());
+        dto.setPrice(vehicle.getPrice().getPrice());
+        dto.setMileage(vehicle.getMileage().getMileage());
+        dto.setYear(vehicle.getYear().getYear());
+        dto.setTransmissionType(vehicle.getTransmission_Type().getTransmission_type());
 
-	    // Update Mileage
-	    if (vehicle.getMileage() != null) {
-	        vehicle.getMileage().setMileage(dto.getMileage());
-	    }
+        List<String> urls = new ArrayList<>();
+        if (vehicle.getMediaList() != null) {
+            for (VehicleMedia media : vehicle.getMediaList()) {
+                urls.add(media.getS3Url());
+            }
+        }
+        dto.setMediaUrls(urls);
 
-	    // Update Year
-	    if (vehicle.getYear() != null) {
-	        vehicle.getYear().setYear(dto.getYear());
-	    }
-
-	    return vehicleRepository.save(vehicle);
-	}
-
-	
-	
-	
-	@Override
-	public void deleteVehicle(Long id) {
-	    if (!vehicleRepository.existsById(id)) {
-	        throw new RuntimeException("Vehicle not found with id " + id);
-	    }
-	    vehicleRepository.deleteById(id);
-	}
-
+        return dto;
+    }
 }

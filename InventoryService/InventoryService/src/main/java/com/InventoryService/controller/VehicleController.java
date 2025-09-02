@@ -1,53 +1,61 @@
 package com.InventoryService.controller;
 
-import java.util.List;
-import java.util.Optional;
+import com.InventoryService.dto.VehicleDetailsDto;
+import com.InventoryService.service.VehicleService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
-import com.InventoryService.dto.VehicleDetailsDto;
-import com.InventoryService.entity.VehicleDetails;
-import com.InventoryService.service.VehicleService;
+import java.util.List;
 
 @RestController
-@RequestMapping("/api/vehicles")
+@RequestMapping("/vehicles")
 public class VehicleController {
 
     @Autowired
     private VehicleService vehicleService;
+    
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<VehicleDetailsDto> createVehicle(
+            @RequestPart("vehicle") String vehicleJson,
+            @RequestPart(value = "images", required = false) List<MultipartFile> images
+    ) throws JsonProcessingException {
 
-    // Create vehicle
-    @PostMapping
-    public ResponseEntity<VehicleDetailsDto> createVehicle(@RequestBody VehicleDetailsDto vehicleDto) {
-        VehicleDetailsDto created = vehicleService.createVehicle(vehicleDto);
-        return ResponseEntity.ok(created);
+        ObjectMapper mapper = new ObjectMapper();
+        VehicleDetailsDto vehicleDto = mapper.readValue(vehicleJson, VehicleDetailsDto.class);
+
+        // ✅ call service to persist
+        VehicleDetailsDto saved = vehicleService.createVehicle(vehicleDto, images);
+
+        // ✅ return saved DTO (with ID, mediaUrls, etc.)
+        return ResponseEntity.ok(saved);
     }
 
-    // Get all vehicles
-    @GetMapping
-    public ResponseEntity<List<VehicleDetailsDto>> getAllVehicles() {
-        List<VehicleDetailsDto> vehicles = vehicleService.getAllVehicles();
-        return ResponseEntity.ok(vehicles);
-    }
 
-    // Get vehicle by ID
+
     @GetMapping("/{id}")
-    public ResponseEntity<VehicleDetailsDto> getVehicleById(@PathVariable Long id) {
-        Optional<VehicleDetailsDto> vehicleOpt = vehicleService.findVehicleById(id);
-        return vehicleOpt.map(ResponseEntity::ok)
-                         .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<VehicleDetailsDto> getVehicle(@PathVariable Long id) {
+        return vehicleService.findVehicleById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
-    // Update vehicle
+    @GetMapping
+    public List<VehicleDetailsDto> getAllVehicles() {
+        return vehicleService.getAllVehicles();
+    }
+
     @PutMapping("/{id}")
-    public ResponseEntity<VehicleDetails> updateVehicle(@PathVariable Long id, @RequestBody VehicleDetailsDto dto) {
-        VehicleDetails updated = vehicleService.updateVehicle(id, dto);
-        return ResponseEntity.ok(updated);
+    public ResponseEntity<VehicleDetailsDto> updateVehicle(@PathVariable Long id,
+                                                           @RequestBody VehicleDetailsDto dto) {
+        return ResponseEntity.ok(vehicleService.updateVehicle(id, dto));
     }
 
-    // Delete vehicle
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteVehicle(@PathVariable Long id) {
         vehicleService.deleteVehicle(id);

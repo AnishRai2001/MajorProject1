@@ -1,3 +1,4 @@
+
 package com.InventoryService.entity;
 
 import java.util.ArrayList;
@@ -47,62 +48,72 @@ public class VehicleDetails {
 	 @OneToMany(mappedBy = "vehicleDetails", cascade = CascadeType.ALL, orphanRemoval = true)
 	    private List<VehicleMedia> mediaList = new ArrayList<>();
 
+	 public long getId() {
+		 return id;
+	 }
 
-	public long getId() {
-		return id;
-	}
+	 public void setId(long id) {
+		 this.id = id;
+	 }
 
-	public void setId(long id) {
-		this.id = id;
-	}
+	 public Brand getBrand() {
+		 return brand;
+	 }
 
-	public Brand getBrand() {
-		return brand;
-	}
+	 public void setBrand(Brand brand) {
+		 this.brand = brand;
+	 }
 
-	public void setBrand(Brand brand) {
-		this.brand = brand;
-	}
+	 public Moddel getModel() {
+		 return model;
+	 }
 
-	public Moddel getModel() {
-		return model;
-	}
+	 public void setModel(Moddel model) {
+		 this.model = model;
+	 }
 
-	public void setModel(Moddel model) {
-		this.model = model;
-	}
+	 public Price getPrice() {
+		 return price;
+	 }
 
-	public Price getPrice() {
-		return price;
-	}
+	 public void setPrice(Price price) {
+		 this.price = price;
+	 }
 
-	public void setPrice(Price price) {
-		this.price = price;
-	}
+	 public Mileage getMileage() {
+		 return mileage;
+	 }
 
-	public Mileage getMileage() {
-		return mileage;
-	}
+	 public void setMileage(Mileage mileage) {
+		 this.mileage = mileage;
+	 }
 
-	public void setMileage(Mileage mileage) {
-		this.mileage = mileage;
-	}
+	 public Year getYear() {
+		 return year;
+	 }
 
-	public Year getYear() {
-		return year;
-	}
+	 public void setYear(Year year) {
+		 this.year = year;
+	 }
 
-	public void setYear(Year year) {
-		this.year = year;
-	}
+	 public Transmission_Type getTransmission_Type() {
+		 return transmission_Type;
+	 }
 
-	public Transmission_Type getTransmission_Type() {
-		return transmission_Type;
-	}
+	 public void setTransmission_Type(Transmission_Type transmission_Type) {
+		 this.transmission_Type = transmission_Type;
+	 }
 
-	public void setTransmission_Type(Transmission_Type transmission_Type) {
-		this.transmission_Type = transmission_Type;
-	}
+	 public List<VehicleMedia> getMediaList() {
+		 return mediaList;
+	 }
+
+	 public void setMediaList(List<VehicleMedia> mediaList) {
+		 this.mediaList = mediaList;
+	 }
+
+
+	
 	
 
 

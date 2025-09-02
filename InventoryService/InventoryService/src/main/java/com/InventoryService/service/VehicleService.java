@@ -1,16 +1,20 @@
 package com.InventoryService.service;
 
+import com.InventoryService.dto.VehicleDetailsDto;
+import org.springframework.web.multipart.MultipartFile;
+
 import java.util.List;
 import java.util.Optional;
 
-import com.InventoryService.dto.VehicleDetailsDto;
-import com.InventoryService.entity.VehicleDetails;
-
 public interface VehicleService {
-	   Optional<VehicleDetailsDto> findVehicleById(Long id);
-	    List<VehicleDetailsDto> getAllVehicles();
-	  VehicleDetails updateVehicle(Long id, VehicleDetailsDto dto);
-	    void deleteVehicle(Long id);
-		VehicleDetailsDto createVehicle(VehicleDetailsDto vehicle);
 
+	public   VehicleDetailsDto createVehicle(VehicleDetailsDto dto, List<MultipartFile> files) ;
+
+    Optional<VehicleDetailsDto> findVehicleById(Long id);
+
+    List<VehicleDetailsDto> getAllVehicles();
+
+    VehicleDetailsDto updateVehicle(Long id, VehicleDetailsDto dto);
+
+    void deleteVehicle(Long id);
 }
