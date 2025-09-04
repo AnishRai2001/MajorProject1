@@ -1,11 +1,13 @@
 package com.InventoryService.controller;
 
+import com.InventoryService.ResponseStructure.PageResponse;
 import com.InventoryService.dto.VehicleDetailsDto;
 import com.InventoryService.service.VehicleService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -61,4 +63,19 @@ public class VehicleController {
         vehicleService.deleteVehicle(id);
         return ResponseEntity.noContent().build();
     }
+    @GetMapping("/search")
+    public ResponseEntity<PageResponse<VehicleDetailsDto>> searchVehicles(
+            @RequestParam(required = false) String brand,
+            @RequestParam(required = false) String model,
+            @RequestParam(required = false) Double minPrice,
+            @RequestParam(required = false) Double maxPrice,
+            @RequestParam(required = false) String transmissionType,
+            Pageable pageable
+    ) {
+        return ResponseEntity.ok(
+            vehicleService.searchVehiclesPageResponse(brand, model, minPrice, maxPrice, transmissionType, pageable)
+        );
+    }
+
+
 }

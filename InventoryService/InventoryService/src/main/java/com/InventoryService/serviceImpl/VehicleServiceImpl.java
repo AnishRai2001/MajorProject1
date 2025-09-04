@@ -1,15 +1,18 @@
 package com.InventoryService.serviceImpl;
 
 import com.InventoryService.Repository.VehicleRepository;
+import com.InventoryService.ResponseStructure.PageResponse;
 import com.InventoryService.client.MediaClient;
 import com.InventoryService.dto.MediaUploadResponse;
 import com.InventoryService.dto.VehicleDetailsDto;
 import com.InventoryService.entity.*;
 import com.InventoryService.service.VehicleService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import org.springframework.data.domain.Pageable; // ✅ correct
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -139,4 +142,39 @@ public class VehicleServiceImpl implements VehicleService {
 
         return dto;
     }
+
+    @Override
+    public PageResponse<VehicleDetailsDto> searchVehiclesPageResponse(
+            String brand,
+            String model,
+            Double minPrice,
+            Double maxPrice,
+            String transmissionType,
+            Pageable pageable
+    ) {
+        Page<VehicleDetails> page = vehicleRepository.searchVehicles(
+                brand, model, minPrice, maxPrice, transmissionType, pageable
+        );
+
+        List<VehicleDetailsDto> content = new ArrayList<>();
+        for (VehicleDetails v : page.getContent()) {
+            content.add(convertToDto(v));
+        }
+
+        PageResponse<VehicleDetailsDto> resp = new PageResponse<>();
+        resp.setContent(content);
+        resp.setPage(page.getNumber());
+        resp.setSize(page.getSize());
+        resp.setTotalElements(page.getTotalElements());
+        resp.setTotalPages(page.getTotalPages());
+        resp.setLast(page.isLast());
+        return resp;
+    }
+
+//	@Override
+//	public PageResponse<VehicleDetailsDto> searchVehiclesPageResponse(String brand, String model, Double minPrice,
+//			Double maxPrice, String transmissionType) {
+//		// TODO Auto-generated method stub
+//		return null;
+//	}
 }
