@@ -1,14 +1,15 @@
 package com.example.BuyerSellerService.service;
 
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+
 import com.example.BuyerSellerService.Dto.UserDto;
 import com.example.BuyerSellerService.Repository.EvaluationRequestRepository;
 import com.example.BuyerSellerService.Repository.SellerRepository;
 import com.example.BuyerSellerService.client.UserServiceClient;
 import com.example.BuyerSellerService.entity.CarEvaluationRequest;
 import com.example.BuyerSellerService.entity.SellerProfile;
-import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 public class SellerService {
@@ -25,22 +26,22 @@ public class SellerService {
         this.userServiceClient = userServiceClient;
     }
 
-    // Save seller profile
-    public SellerProfile saveSellerProfile(Long userId, SellerProfile profile) {
+    private void validateSellerRole(Long userId) {
         UserDto user = userServiceClient.getUserById(userId);
-        if (!user.getRole().equals("SELLER") && !user.getRole().equals("BOTH")) {
+        String role = user.getRole();
+        if (role == null || (!role.equals("SELLER") && !role.equals("BOTH"))) {
             throw new RuntimeException("User is not allowed to act as a seller!");
         }
+    }
+
+    public SellerProfile saveSellerProfile(Long userId, SellerProfile profile) {
+        validateSellerRole(userId);
         profile.setUserId(userId);
         return sellerRepo.save(profile);
     }
 
-    // Request evaluation
     public CarEvaluationRequest requestEvaluation(Long sellerId, Long buyerId, Long vehicleId) {
-        UserDto sellerUser = userServiceClient.getUserById(sellerId);
-        if (!sellerUser.getRole().equals("SELLER") && !sellerUser.getRole().equals("BOTH")) {
-            throw new RuntimeException("User is not allowed to act as a seller!");
-        }
+        validateSellerRole(sellerId);
 
         SellerProfile seller = sellerRepo.findById(sellerId)
                 .orElseThrow(() -> new RuntimeException("Seller profile not found!"));
@@ -50,29 +51,18 @@ public class SellerService {
         request.setBuyerUserId(buyerId);
         request.setVehicleId(vehicleId);
         request.setStatus("PENDING");
-        request.setSellerUserId(seller.getUserId());
 
         return evalRepo.save(request);
     }
 
-    // Fetch seller profile
     public SellerProfile getSellerProfile(Long userId) {
-        UserDto user = userServiceClient.getUserById(userId);
-        if (!user.getRole().equals("SELLER") && !user.getRole().equals("BOTH")) {
-            throw new RuntimeException("User is not allowed to act as a seller!");
-        }
-
+        validateSellerRole(userId);
         return sellerRepo.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Seller profile not found!"));
     }
 
-    // Fetch all evaluations for a seller
     public List<CarEvaluationRequest> getSellerEvaluations(Long sellerId) {
-        UserDto user = userServiceClient.getUserById(sellerId);
-        if (!user.getRole().equals("SELLER") && !user.getRole().equals("BOTH")) {
-            throw new RuntimeException("User is not allowed to act as a seller!");
-        }
-
+        validateSellerRole(sellerId);
         return evalRepo.findBySellerUserId(sellerId);
     }
 }
