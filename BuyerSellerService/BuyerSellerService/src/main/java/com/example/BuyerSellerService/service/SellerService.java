@@ -45,6 +45,11 @@ public class SellerService {
 
         SellerProfile seller = sellerRepo.findById(sellerId)
                 .orElseThrow(() -> new RuntimeException("Seller profile not found!"));
+        List<CarEvaluationRequest> existing = evalRepo.findBySellerUserIdAndBuyerUserIdAndVehicleId(
+                sellerId, buyerId, vehicleId);
+        if (!existing.isEmpty()) {
+            throw new RuntimeException("Evaluation request already exists!");
+        }
 
         CarEvaluationRequest request = new CarEvaluationRequest();
         request.setSellerUserId(seller.getUserId());

@@ -10,4 +10,7 @@ public interface EvaluationRequestRepository extends JpaRepository<CarEvaluation
 
 	List<CarEvaluationRequest> findBySellerUserId(Long sellerId);
 
+	List<CarEvaluationRequest> findBySellerUserIdAndBuyerUserIdAndVehicleId(Long sellerId, Long buyerId,
+			Long vehicleId);
+
 }
