@@ -8,13 +8,15 @@ import org.springframework.stereotype.Service;
 import com.example.BookingService.Repository.BookingRepository;
 import com.example.BookingService.client.InventoryClient;
 import com.example.BookingService.client.UserClient;
-import com.example.BookingService.dto.EmployeeDto;
 import com.example.BookingService.entity.Booking;
 import com.example.BookingService.entity.dto.BookingRequestDto;
 import com.example.BookingService.entity.dto.BookingResponseDto;
+import com.example.BookingService.entity.dto.EmployeeDto;
+import com.example.BookingService.entity.dto.NotificationEvent;
 import com.example.BookingService.entity.dto.VehicleDetailsDto;
 import com.example.BookingService.enums.BookingStatus;
 import com.example.BookingService.exception.TimeSlotAlreadyBookedException;
+import com.example.BookingService.kafka.NotificationProducer;
 import com.example.BookingService.service.BookingService;
 
 @Service
@@ -22,6 +24,9 @@ public class BookingServiceImpl implements BookingService {
 
     @Autowired
     private BookingRepository bookingRepository;
+
+    @Autowired
+    private NotificationProducer notificationProducer;
 
     @Autowired
     private InventoryClient inventoryClient;
@@ -58,9 +63,17 @@ public class BookingServiceImpl implements BookingService {
 
         bookingRepository.save(booking);
 
+        // ✅ Send notification
+        notificationProducer.sendNotification(new NotificationEvent(
+                user.getPhoneNumber(),
+                "✅ Booking confirmed for " + vehicle.getBrand() + " " + vehicle.getModel() +
+                        " on " + booking.getDate() + " at " + booking.getStartTime(),
+                "SMS"
+        ));
+
         return new BookingResponseDto(
                 "Booking confirmed for " + user.getName() +
-                " with " + vehicle.getBrand() + " " + vehicle.getModel(),
+                        " with " + vehicle.getBrand() + " " + vehicle.getModel(),
                 booking.getId(),
                 booking.getUserId(),
                 booking.getVehicleId(),
@@ -79,6 +92,17 @@ public class BookingServiceImpl implements BookingService {
 
         booking.setStatus(BookingStatus.CANCELLED);
         bookingRepository.save(booking);
+
+        // ❌ Send cancellation notification
+        EmployeeDto user = userClient.getUserById(booking.getUserId());
+        VehicleDetailsDto vehicle = inventoryClient.getVehicleById(booking.getVehicleId());
+
+        notificationProducer.sendNotification(new NotificationEvent(
+                user.getPhoneNumber(),
+                "❌ Booking cancelled for " + vehicle.getBrand() + " " + vehicle.getModel() +
+                        " scheduled on " + booking.getDate(),
+                "SMS"
+        ));
 
         return new BookingResponseDto(
                 "Booking with ID " + bookingId + " has been cancelled.",
@@ -149,6 +173,17 @@ public class BookingServiceImpl implements BookingService {
         booking.setStartTime(request.getStartTime());
         booking.setEndTime(request.getEndTime());
         bookingRepository.save(booking);
+
+        // 📅 Send reschedule notification
+        EmployeeDto user = userClient.getUserById(booking.getUserId());
+        VehicleDetailsDto vehicle = inventoryClient.getVehicleById(booking.getVehicleId());
+
+        notificationProducer.sendNotification(new NotificationEvent(
+                user.getPhoneNumber(),
+                "📅 Booking rescheduled for " + vehicle.getBrand() + " " + vehicle.getModel() +
+                        " to " + booking.getDate() + " at " + booking.getStartTime(),
+                "SMS"
+        ));
 
         return new BookingResponseDto(
                 "Booking with ID " + bookingId + " has been rescheduled.",

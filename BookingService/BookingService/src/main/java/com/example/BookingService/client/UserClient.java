@@ -4,8 +4,8 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
-import com.example.BookingService.dto.EmployeeDto;
-import com.example.BookingService.dto.UserDto;
+import com.example.BookingService.entity.dto.EmployeeDto;
+import com.example.BookingService.entity.dto.UserDto;
 
 
 @FeignClient(name = "USER-SERVICE", url = "http://localhost:8080/api/users")

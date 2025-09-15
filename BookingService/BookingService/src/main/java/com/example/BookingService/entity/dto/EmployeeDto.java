@@ -1,4 +1,4 @@
-package com.example.BookingService.dto;
+package com.example.BookingService.entity.dto;
 
 public class EmployeeDto {
 	
